@@ -1,14 +1,25 @@
+import time
+from importlib.metadata import version
 from pathlib import Path
 from typing import Annotated
 
 import numpy as np
 import typer
+from numpy.typing import NDArray
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, ProgressColumn, SpinnerColumn, Task, TextColumn
+from rich.progress import (
+    BarColumn,
+    MofNCompleteColumn,
+    Progress,
+    ProgressColumn,
+    Task,
+    TaskProgressColumn,
+    TextColumn,
+)
 from rich.text import Text
 
-from word_crunch import build_pattern_matrix
+__version__ = version("wordle-solver")
 
 
 class MinSecMsColumn(ProgressColumn):
@@ -26,34 +37,63 @@ app.add_typer(typer_instance=tools_app, name="tools")
 console = Console()
 
 
+def _version_callback(value: bool) -> None:
+    if value:
+        console.print(f"wordle-solver {__version__}")
+        raise typer.Exit()
+
+
+def _validate_npy_suffix(path: Path) -> Path:
+    if path.suffix != ".npy":
+        raise typer.BadParameter(
+            message=f"Output must be a '.npy' file, got '{path.suffix}'",
+        )
+    return path
+
+
+@app.callback()
+def version_callback(
+    _: Annotated[
+        bool,
+        typer.Option(
+            default="--version",
+            callback=_version_callback,
+            is_eager=True,
+            help="Show version and exit.",
+        ),
+    ] = False,
+) -> None:
+    pass
+
+
 @tools_app.command()
 def build_matrix(
     word_list: Annotated[
         Path,
         typer.Argument(
-            ...,
             help="Path to newline-separated word list file",
             exists=True,
             file_okay=True,
             dir_okay=False,
             readable=True,
+            resolve_path=True,
+            shell_complete=lambda _context, _param, incomplete: [
+                str(p) for p in Path().glob(f"{incomplete}*.txt")
+            ],
         ),
     ],
     output: Annotated[
         Path,
         typer.Argument(
-            ...,
             help="Output .npy file path",
+            dir_okay=False,
+            writable=True,
+            resolve_path=True,
+            callback=_validate_npy_suffix,
         ),
     ],
 ) -> None:
     """Build a Wordle pattern matrix and save to a .npy file."""
-
-    if output.suffix != ".npy":
-        console.print(
-            f"[red]Error:[/red] Output must be a .npy file, got '{output.suffix}'"
-        )
-        raise typer.Exit(code=1)
 
     if output.exists():
         overwrite = typer.confirm(f"'{output}' already exists. Overwrite?")
@@ -61,8 +101,13 @@ def build_matrix(
             console.print("[yellow]Aborted.[/yellow]")
             raise typer.Exit(code=0)
 
-    words = word_list.read_text().splitlines()
-    words = [w.strip() for w in words if w.strip()]
+    words = [
+        valid_w for w in word_list.read_text().splitlines() if (valid_w := w.strip())
+    ]
+
+    if not words:
+        console.print("[red]Error:[/red] Word list is empty")
+        raise typer.Exit(code=1)
 
     console.print(
         Panel(
@@ -70,20 +115,34 @@ def build_matrix(
             f"[bold]Words loaded:[/bold] {len(words):,}\n"
             f"[bold]Output:[/bold] {output}",
             title="[bold blue]Build Pattern Matrix[/bold blue]",
-            expand=False,
+            expand=True,
         )
     )
     console.print()
 
     with Progress(
-        SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
+        BarColumn(bar_width=None),
+        TaskProgressColumn(),
+        MofNCompleteColumn(),
         MinSecMsColumn(),
         console=console,
+        expand=True,
+        get_time=time.perf_counter,
     ) as progress:
-        task = progress.add_task("Computing pattern matrix...", total=None)
-        matrix, elapsed = build_pattern_matrix(words)
-        progress.update(task, description="Done.", completed=True)
+        from word_crunch import build_pattern_matrix
+
+        n = len(words)
+        task = progress.add_task("Computing pattern matrix...", total=n)
+        result: tuple[NDArray[np.uint8], float] | None = None
+        for rows_done, result_matrix, result_elapsed in build_pattern_matrix(words):
+            progress.update(task_id=task, completed=rows_done)
+            result = (result_matrix, result_elapsed)
+        progress.update(task_id=task, description="Done.")
+
+        if result is None:
+            raise RuntimeError("Pattern matrix computation yielded no results")
+        matrix, elapsed = result
 
     np.save(file=output, arr=matrix)
     console.print()
@@ -94,7 +153,7 @@ def build_matrix(
             f"[bold]Matrix shape:[/bold] {matrix.shape[0]:,} x {matrix.shape[1]:,}\n"
             f"[bold]Time taken:[/bold] {elapsed:.3f}s",
             title="[bold green]Complete[/bold green]",
-            expand=False,
+            expand=True,
         )
     )
 
