@@ -51,6 +51,17 @@ def _validate_npy_suffix(path: Path) -> Path:
     return path
 
 
+def _format_size(size_bytes: int) -> str:
+    """Converts bytes to a human-readable string (kB, MB, GB)."""
+    if size_bytes == 0:
+        return "0 B"
+    for unit in ["B", "kB", "MB", "GB", "TB"]:
+        if size_bytes < 1024:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1024  # pyright: ignore[reportAssignmentType]
+    return f"{size_bytes:.2f} PB"
+
+
 @app.callback()
 def version_callback(
     _: Annotated[
@@ -150,6 +161,7 @@ def build_matrix(
     console.print(
         Panel(
             renderable=f"[bold green]Saved:[/bold green] {output}\n"
+            f"[bold]File size:[/bold] {_format_size(output.stat().st_size)}\n"
             f"[bold]Matrix shape:[/bold] {matrix.shape[0]:,} x {matrix.shape[1]:,}\n"
             f"[bold]Time taken:[/bold] {elapsed:.3f}s",
             title="[bold green]Complete[/bold green]",
