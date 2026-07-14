@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Pattern Matrix LUT
+wordle_pattern_matrix.npy
