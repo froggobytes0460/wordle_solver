@@ -10,4 +10,4 @@ wheels/
 .venv
 
 # Pattern Matrix LUT
-wordle_pattern_matrix.npy
+pattern_matrix.npy

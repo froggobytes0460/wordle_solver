@@ -5,18 +5,20 @@ from numpy.typing import NDArray
 
 
 def build_pattern_matrix(guesses: list[str]) -> tuple[NDArray[np.uint8], float]:
-    """Build an NxN pattern matrix for a Wordle bot with no knowledge of the answer pool.
+    """Build an NxN pattern matrix for a Wordle bot.
 
-    Each cell [i, j] encodes the Wordle result of guessing word i when the secret is word j,
-    compressed to a uint8 via base-3: tile values 0=gray, 1=yellow, 2=green mapped to
-    digits of a 5-digit base-3 number (ones digit = position 0).
+    Each cell [i, j] encodes the Wordle result of guessing word i when the
+    secret is word j, compressed to a uint8 via base-3: tile values 0=gray,
+    1=yellow, 2=green mapped to digits of a 5-digit base-3 number (ones
+    digit = position 0).
 
     Args:
-        guesses (list[str]): All valid 5-letter words (used as both guesses and potential answers).
+        guesses: All valid 5-letter words (used as both guesses and answers).
 
     Returns:
-        tuple[NDArray[np.uint8]]: An array of shape (N, N), values in range [0, 242] and the time taken as float.
+        Array of shape (N, N), values in [0, 242], and elapsed time as float.
     """
+
     n = len(guesses)
     g: NDArray[np.uint8] = np.array(
         [[ord(c) for c in w] for w in guesses], dtype=np.uint8
@@ -45,6 +47,6 @@ def build_pattern_matrix(guesses: list[str]) -> tuple[NDArray[np.uint8], float]:
                 remaining[yellow, match_pos] = 0
                 not_green = not_green & ~yellow
 
-        matrix[i] = np.dot(tiles, powers)
+        np.dot(tiles, powers, out=matrix[i])
 
     return matrix, time.time() - t0
