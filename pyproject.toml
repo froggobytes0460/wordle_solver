@@ -11,6 +11,19 @@ dependencies = [
     "typer>=0.26.8",
 ]
 
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.9",
+    "ruff>=0.15.21",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "B", "C4", "UP", "SIM", "RUF", "PERF"]
+
 [tool.basedpyright]
 venvPath = "."
 venv = ".venv"
