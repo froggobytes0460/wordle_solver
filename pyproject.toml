@@ -17,9 +17,10 @@ dependencies = [
 
 [project.scripts]
 wordle-solver = "main:app"
+wordle-solver-tools = "tools:app"
 
 [tool.hatch.build.targets.wheel]
-include = ["main.py", "word_crunch.py"]
+include = ["main.py", "tools.py", "word_crunch.py", "tui/", "ai/"]
 
 [dependency-groups]
 dev = [
