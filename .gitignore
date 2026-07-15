@@ -10,4 +10,8 @@ wheels/
 .venv
 
 # Pattern Matrix LUT
-pattern_matrix.npy
+state_lut.npy
+
+# OS
+.DS_Store
+Thumbs.db

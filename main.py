@@ -141,12 +141,11 @@ def build_matrix(
         expand=True,
         get_time=time.perf_counter,
     ) as progress:
-        from word_crunch import build_pattern_matrix
+        from word_crunch import build_state_lut
 
-        n = len(words)
-        task = progress.add_task("Computing pattern matrix...", total=n)
+        task = progress.add_task("Computing pattern matrix...", total=len(words))
         result: tuple[NDArray[np.uint8], float] | None = None
-        for rows_done, result_matrix, result_elapsed in build_pattern_matrix(words):
+        for rows_done, result_matrix, result_elapsed in build_state_lut(words):
             progress.update(task_id=task, completed=rows_done)
             result = (result_matrix, result_elapsed)
         progress.update(task_id=task, description="Done.")

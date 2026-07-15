@@ -11,7 +11,7 @@ class LetterState(IntEnum):
     GREEN = 2
 
 
-def build_pattern_matrix(
+def build_state_lut(
     guesses: list[str],
 ) -> Iterator[tuple[int, NDArray[np.uint8], float]]:
     """Build an NxN pattern matrix for a Wordle bot, yielding progress per row.
