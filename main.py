@@ -89,7 +89,7 @@ def build_matrix(
             readable=True,
             resolve_path=True,
             shell_complete=lambda _context, _param, incomplete: [
-                str(p) for p in Path().glob(f"{incomplete}*.txt")
+                str(p) for p in Path.cwd().glob(f"{incomplete}*.txt")
             ],
         ),
     ],
