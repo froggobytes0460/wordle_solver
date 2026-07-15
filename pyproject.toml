@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "wordle-solver"
-version = "1.0.0"
+version = "1.1.0"
 description = "Wordle Solver"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -13,6 +13,7 @@ dependencies = [
     "prompt-toolkit>=3.0.52",
     "rich>=15.0.0",
     "typer>=0.26.8",
+    "wordfreq>=3.1.1",
 ]
 
 [project.scripts]

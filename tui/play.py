@@ -7,7 +7,7 @@ from rich.console import Console
 from ai.solver import WordleSolver
 from tui.app import build_app
 from tui.game import WordleGame
-from tui.loader import load_words_and_lut
+from tui.loader import load_words_and_lut_and_weights
 
 
 def play(
@@ -26,7 +26,9 @@ def play(
     :type target: str | None
     """
 
-    words, state_lut = load_words_and_lut(word_list=word_list, matrix=matrix)
+    words, state_lut, weights = load_words_and_lut_and_weights(
+        word_list=word_list, matrix=matrix
+    )
     if len(words) != state_lut.shape[0]:
         console.print(
             f"[red]Error:[/red] word list has {len(words):,} words but matrix "
@@ -45,7 +47,7 @@ def play(
             )
             raise SystemExit(1) from None
 
-    solver = WordleSolver(words=words, state_lut=state_lut)
+    solver = WordleSolver(words=words, state_lut=state_lut, weights=weights)
     game = WordleGame(words=words, solver=solver, target_idx=target_idx)
     app = build_app(game)
     app.run()
