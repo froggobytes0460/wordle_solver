@@ -29,6 +29,9 @@ class WordleSolver:
         n = self.state_lut.shape[0]
         n_candidates = len(self.candidates)
 
+        if n_candidates <= 1:
+            return int(self.candidates[0])
+
         sub = self.state_lut[:, self.candidates]
 
         offset = sub.astype(np.int64) + (243 * np.arange(n, dtype=np.int64))[:, None]
