@@ -31,23 +31,21 @@ class WordleGame:
         self.target_idx = target_idx
         self.rows = []
         self.cur_guess = ""
+        self.cur_guess_idx = -1
         self.cur_states = [0] * WORD_LEN
         self.cursor = 0
-        self.status = ""
+        self.status = "Computing first guess…"
         self.finished = False
         self.won = False
-        self._next_guess()
+        self.thinking = True
 
     @property
     def auto(self) -> bool:
         return self.target_idx is not None
 
-    def _next_guess(self) -> None:
-        if len(self.solver.candidates) == 0:
-            self.status = "No candidates remain — check entered patterns."
-            self.finished = True
-            return
-        guess_idx = self.solver.best_guess()
+    def apply_guess(self, guess_idx: int) -> None:
+        """Applies a guess computed off the UI thread by `solver.best_guess()`."""
+        self.thinking = False
         self.cur_guess = self.words[guess_idx]
         self.cur_guess_idx = guess_idx
         self.cursor = 0
@@ -69,16 +67,18 @@ class WordleGame:
     def cycle_state(self) -> None:
         self.cur_states[self.cursor] = (self.cur_states[self.cursor] + 1) % 3
 
-    def confirm_row(self) -> None:
+    def confirm_row(self) -> bool:
+        """Records the current row. Returns True if the caller must now
+        compute the next guess (via `solver.best_guess()` + `apply_guess`)."""
         if self.finished:
-            return
+            return False
         self.rows.append((self.cur_guess, list(self.cur_states)))
 
         if self.cur_states == [2] * WORD_LEN:
             self.won = True
             self.finished = True
             self.status = f"Solved in {len(self.rows)} attempt(s)!"
-            return
+            return False
 
         self.solver.update_state_lut(
             guess_idx=self.cur_guess_idx, pattern=encode_pattern(self.cur_states)
@@ -88,6 +88,13 @@ class WordleGame:
             self.finished = True
             n = len(self.solver.candidates)
             self.status = f"Out of attempts. {n:,} candidate(s) still possible."
-            return
+            return False
 
-        self._next_guess()
+        if len(self.solver.candidates) == 0:
+            self.status = "No candidates remain — check entered patterns."
+            self.finished = True
+            return False
+
+        self.thinking = True
+        self.status = "Computing next guess…"
+        return True

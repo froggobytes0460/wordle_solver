@@ -50,7 +50,7 @@ def play(
     solver = WordleSolver(words=words, state_lut=state_lut, weights=weights)
     game = WordleGame(words=words, solver=solver, target_idx=target_idx)
     app = build_app(game)
-    app.run()
+    app.run(pre_run=app.pre_run)  # pyright: ignore[reportAttributeAccessIssue]
 
     if game.won:
         console.print(

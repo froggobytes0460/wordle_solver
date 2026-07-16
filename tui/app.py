@@ -1,5 +1,7 @@
 """prompt_toolkit Application wiring: key bindings and rendering for WordleGame."""
 
+import asyncio
+
 from prompt_toolkit import Application
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.key_binding import KeyBindings
@@ -12,6 +14,15 @@ from tui.pattern import STATE_BG
 
 def build_app(game: WordleGame) -> Application[None]:
     kb = KeyBindings()
+
+    async def _compute_next_guess() -> None:
+        # best_guess() is CPU-bound numpy work; run off the event loop so
+        # the "Computing…" status actually renders instead of the UI
+        # freezing silently until the call returns.
+        loop = asyncio.get_running_loop()
+        guess_idx = await loop.run_in_executor(None, game.solver.best_guess)
+        game.apply_guess(guess_idx)
+        app.invalidate()
 
     @kb.add("left")
     def _(_event) -> None:
@@ -29,11 +40,11 @@ def build_app(game: WordleGame) -> Application[None]:
             game.cycle_state()
 
     @kb.add("enter")
-    def _(event) -> None:
+    async def _(event) -> None:
         if game.finished:
             event.app.exit()
-        else:
-            game.confirm_row()
+        elif not game.thinking and game.confirm_row():
+            await _compute_next_guess()
 
     @kb.add("q")
     @kb.add("c-c")
@@ -80,4 +91,8 @@ def build_app(game: WordleGame) -> Application[None]:
 
     control = FormattedTextControl(text=render)
     layout = Layout(HSplit([Window(content=control)]))
-    return Application(layout=layout, key_bindings=kb, full_screen=True)
+    app = Application(layout=layout, key_bindings=kb, full_screen=True)
+    app.pre_run = lambda: app.create_background_task(  # pyright: ignore[reportAttributeAccessIssue]
+        coroutine=_compute_next_guess()
+    )
+    return app

@@ -10,6 +10,11 @@ NxN pattern matrix (`state_lut`) where cell `[i, j]` encodes the tile result
 (gray/yellow/green, base-3 packed) of guessing word `i` against secret `j`.
 After each guess the candidate set is filtered by the observed pattern.
 
+Entropy is computed with each remaining candidate weighted by its real-world
+word frequency (via [`wordfreq`](https://pypi.org/project/wordfreq/) Zipf
+score), and a small log-frequency bonus (`_GUESS_WEIGHT_LAMBDA = 0.1`) nudges
+ties toward common words — without overriding a genuine entropy gap.
+
 **Complexity** ($N$ = word list size, $M$ = current candidate count):
 
 - Matrix build (`word_crunch.build_state_lut`): $O(N^2)$ time and space — every
@@ -57,7 +62,7 @@ uv run wordle-solver word_list.txt state_lut.npy --target crane
 - `main.py` — `wordle-solver` CLI entrypoint (interactive play session)
 - `tools.py` — `wordle-solver-tools` CLI entrypoint (matrix building)
 - `word_crunch.py` — builds the NxN pattern matrix
-- `ai/solver.py` — `WordleSolver`, max-entropy guess selection
+- `ai/solver.py` — `WordleSolver`, frequency-weighted max-entropy guess selection
 - `tui/` — prompt_toolkit full-screen game loop, rendering, key bindings
 - `word_list.txt` — newline-separated word list
 - `state_lut.npy` — precomputed pattern matrix for `word_list.txt`
